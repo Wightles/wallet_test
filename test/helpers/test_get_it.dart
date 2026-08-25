@@ -5,12 +5,12 @@ import 'package:wallet_test/core/di/get_it_injector.dart';
 Future<T> testWithGetIt<T>(Future<T> Function() body) async {
   final local = GetIt.instance;
 
-  local.unregisterAll();
+  await local.reset();
   registerAppDependencies();
 
   try {
     return await body();
   } finally {
-    local.unregisterAll();
+    await local.reset();
   }
 }

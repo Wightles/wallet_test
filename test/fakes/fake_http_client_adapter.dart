@@ -17,13 +17,20 @@ class HttpCall {
 }
 
 class HttpOutcome {
-  HttpOutcome(this.statusCode, {this.body = const {}});
+  HttpOutcome(
+    this.statusCode, {
+    this.body = const {},
+    this.delay = Duration.zero,
+    this.errorType,
+  });
 
   final int statusCode;
   final Map<String, dynamic> body;
+  final Duration delay;
+  final DioExceptionType? errorType;
 }
 
-class FakeHttpClientAdapter extends HttpClientAdapter {
+class FakeHttpClientAdapter implements HttpClientAdapter {
   FakeHttpClientAdapter(this.outcomes);
 
   final List<HttpOutcome> outcomes;
@@ -51,9 +58,27 @@ class FakeHttpClientAdapter extends HttpClientAdapter {
     final index = calls.length - 1;
     final outcome = outcomes.isEmpty
         ? HttpOutcome(500)
-        : outcomes[
-            index < outcomes.length ? index : outcomes.length - 1
-          ];
+        : outcomes[index < outcomes.length ? index : outcomes.length - 1];
+
+    if (outcome.delay > Duration.zero) {
+      await Future.any<void>([
+        Future<void>.delayed(outcome.delay),
+        if (cancelFuture != null)
+          cancelFuture.then<void>((_) {
+            throw DioException(
+              requestOptions: options,
+              type: DioExceptionType.cancel,
+            );
+          }),
+      ]);
+    }
+
+    if (outcome.errorType case final errorType?) {
+      throw DioException(
+        requestOptions: options,
+        type: errorType,
+      );
+    }
 
     if (outcome.statusCode >= 200 && outcome.statusCode < 300) {
       return ResponseBody.fromString(

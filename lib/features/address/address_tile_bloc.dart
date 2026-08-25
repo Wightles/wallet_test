@@ -4,7 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:wallet_test/features/address/address_repository.dart';
 
-class AddressTileEvent {}
+class AddressTileEvent {
+  const AddressTileEvent();
+}
 
 class CopyTapped extends AddressTileEvent {
   const CopyTapped(this.address);
@@ -39,7 +41,8 @@ class AddressTileState {
 class AddressTileBloc extends Bloc<AddressTileEvent, AddressTileState> {
   AddressTileBloc({
     required IAddressRepository repository,
-  })  : _repository = repository {
+  })  : _repository = repository,
+        super(const AddressTileState()) {
     on<CopyTapped>(_onCopyTapped);
     on<ResetCopied>(_onResetCopied);
   }
@@ -73,5 +76,11 @@ class AddressTileBloc extends Bloc<AddressTileEvent, AddressTileState> {
     Emitter<AddressTileState> emit,
   ) async {
     emit(const AddressTileState());
+  }
+
+  @override
+  Future<void> close() {
+    _resetTimer?.cancel();
+    return super.close();
   }
 }
