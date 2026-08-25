@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 
-import 'package:wallet_test/core/dev_stubs/dev_card_issuer.dart';
 import 'package:wallet_test/features/cards/card_issue_bloc.dart';
 import 'package:wallet_test/features/cards/card_issuer.dart';
 
@@ -17,17 +17,29 @@ class CardIssuePage extends StatefulWidget {
 }
 
 class _CardIssuePageState extends State<CardIssuePage> {
-  final DevCardIssuer _issuer = DevCardIssuer();
-  late final CardIssueBloc _bloc = CardIssueBloc(issuer: _issuer);
+  late final ICardIssuer _issuer = GetIt.instance<ICardIssuer>();
+  late final CardIssueBloc _bloc = GetIt.instance<CardIssueBloc>();
+
+  bool _cancelRequested = false;
+
+  void _cancelOnce() {
+    if (_cancelRequested) {
+      return;
+    }
+
+    _cancelRequested = true;
+    _issuer.cancelPending();
+  }
 
   @override
   void dispose() {
-    _issuer.cancelPending();
+    _cancelOnce();
+    _bloc.close();
     super.dispose();
   }
 
-  Future<void> _issue() async {
-    await _bloc.add(
+  void _issue() {
+    _bloc.add(
       IssueTapped(
         CardIssueRequest(cardId: widget.cardId),
       ),
